@@ -3,23 +3,30 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // 1. Önce admin kullanıcı oluştur (Property'lerin "created_by" alanı buna ihtiyaç duyuyor)
+        User::factory()->admin()->create([
+            'name' => 'Admin Kullanıcı',
+            'email' => 'admin@tripto.com',
         ]);
+
+        // 2. Birkaç normal kullanıcı oluştur
+        User::factory()->count(5)->create();
+
+        // 3. Sabit veri seeder'ları
+        $this->call([
+            PropertyTypeSeeder::class,
+            RoomTypeSeeder::class,
+            AmenitySeeder::class,
+            TrustFeatureSeeder::class,
+        ]);
+
+        // 4. En son, yukarıdakilere bağlı olan Property'leri oluştur
+        $this->call(PropertySeeder::class);
     }
 }

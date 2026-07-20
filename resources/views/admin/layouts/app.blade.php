@@ -27,12 +27,11 @@
       content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
     />
 
-    <title>Tripto Admin Panel</title>
-
+    <title>@yield('title', 'Tripto Admin Panel')</title>
     <meta name="description" content="" />
 
     @include('admin.partials.style')
-
+    @yield('styles')
   </head>
 
   <body>
@@ -50,7 +49,15 @@
           <!-- Content wrapper -->
           <div class="content-wrapper">
             <!-- Content -->
-
+            <div class="container-xxl flex-grow-1 container-p-y">
+              <h4 class="fw-bold py-3 mb-4">
+                  @hasSection('breadcrumb_parent')
+                      <span class="text-muted fw-light">@yield('breadcrumb_parent') /</span>
+                  @endif
+                  @yield('breadcrumb_title', 'Sayfa')
+              </h4>
+              @yield('content')
+          </div>
             <!-- / Content -->
              @include('admin.partials.footer')
 
@@ -67,6 +74,7 @@
     <!-- / Layout wrapper -->
 
     @include('admin.partials.script')
+    @yield('scripts')
 
   </body>
 </html>
