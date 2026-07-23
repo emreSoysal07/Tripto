@@ -32,12 +32,23 @@ class PropertySeeder extends Seeder
                     );
                 }
 
-                // Her mülke bir politika (policy) kaydı ekle
-                $property->policy()->create([
-                    'check_in_time' => '14:00',
-                    'check_out_time' => '12:00',
-                    'cancellation_policy' => 'Giriş tarihinden 48 saat öncesine kadar ücretsiz iptal.',
-                    'house_rules' => 'Sigara içilmez. Evcil hayvan kabul edilmez.',
+                // Her mülke yeni dinamik politika (policies) kayıtları ekle
+                $property->policies()->createMany([
+                    [
+                        'icon'        => 'bx-time',
+                        'title'       => 'Giriş ve Çıkış Saatleri',
+                        'description' => 'Giriş saati 14:00, çıkış saati 12:00 olarak belirlenmiştir.',
+                    ],
+                    [
+                        'icon'        => 'bx-x-circle',
+                        'title'       => 'İptal Politikası',
+                        'description' => 'Giriş tarihinden 48 saat öncesine kadar ücretsiz iptal edilebilir.',
+                    ],
+                    [
+                        'icon'        => 'bx-no-entry',
+                        'title'       => 'Ev Kuralları',
+                        'description' => 'Kapalı alanlarda sigara içilmez. Evcil hayvan kabul edilmez.',
+                    ],
                 ]);
             });
     }

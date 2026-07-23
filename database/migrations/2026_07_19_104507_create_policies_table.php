@@ -11,10 +11,9 @@ return new class extends Migration
         Schema::create('policies', function (Blueprint $table) {
             $table->id();
             $table->foreignId('property_id')->constrained('properties')->onDelete('cascade');
-            $table->time('check_in_time');
-            $table->time('check_out_time');
-            $table->text('cancellation_policy');
-            $table->text('house_rules')->nullable();
+            $table->string('icon')->default('bx-info-circle'); // Boxicon sınıfı
+            $table->string('title'); // Politika Başlığı (örn: Evcil Hayvan Kuralı)
+            $table->text('description')->nullable(); // Açıklama
             $table->timestamps();
         });
     }

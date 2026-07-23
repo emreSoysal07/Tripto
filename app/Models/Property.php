@@ -54,9 +54,9 @@ class Property extends Model
         return $this->belongsToMany(Amenity::class, 'property_amenity');
     }
 
-    public function policy(): HasOne
+    public function policies(): HasMany
     {
-        return $this->hasOne(Policy::class);
+        return $this->hasMany(Policy::class);
     }
 
     public function rooms(): HasMany
