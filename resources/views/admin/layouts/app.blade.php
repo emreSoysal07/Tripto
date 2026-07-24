@@ -32,6 +32,7 @@
 
     @include('admin.partials.style')
     @yield('styles')
+    @stack('styles')
   </head>
 
   <body>

@@ -79,8 +79,8 @@
             </table>
         </div>
 
-        <div class="card-body">
-            {{ $properties->links() }}
+        <div class="card-body flex justify-end">
+            {{ $properties->links('vendor.pagination.sneat') }}
         </div>
     </div>
 

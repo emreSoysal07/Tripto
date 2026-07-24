@@ -5,6 +5,65 @@
 @section('breadcrumb_title', 'Yeni Mülk Ekle')
 
 @section('content')
+
+@push('styles')
+<style>
+    /* Sneat Temasına Özel Stiller & Düzeltmeler */
+    .tab-content {
+        width: 100%;
+    }
+    html {
+        overflow-y: scroll;
+    }
+    .custom-alert {
+        border-left: 4px solid #ff3e1d;
+    }
+    /* Sürükle Bırak Resim Yükleme Alanı */
+    .image-dropzone {
+        border: 2px dashed #d9dee3;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        transition: border-color 0.3s, background-color 0.3s;
+    }
+    .image-dropzone:hover {
+        border-color: #696cff;
+        background-color: #f3f4ff;
+    }
+    .preview-image-wrapper {
+        position: relative;
+        display: inline-block;
+        margin: 5px;
+    }
+    .preview-image-wrapper img {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #d9dee3;
+    }
+    .preview-image-wrapper .remove-img-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: #ff3e1d;
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        line-height: 1;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+@endpush
+
 <div class="flex-grow-1">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -13,30 +72,59 @@
         </a>
     </div>
 
-    <form action="{{ route('admin.properties.store') }}" method="POST" enctype="multipart/form-data">
+    {{-- GENERAL VALIDATION ALERT --}}
+    @if ($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <div class="d-flex align-items-center mb-1">
+                <i class="bx bx-error-circle fs-4 me-2"></i>
+                <h5 class="alert-heading mb-0 fw-bold">Lütfen Formdaki Hataları Düzeltiniz</h5>
+            </div>
+            <hr class="my-2">
+            <ul class="mb-0 ps-3">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <form action="{{ route('admin.properties.store') }}" method="POST" enctype="multipart/form-data" id="propertyForm">
         @csrf
 
         <!-- Sneat Filled Tabs Bileşeni -->
         <div class="nav-align-top mb-4">
             <ul class="nav nav-pills nav-fill mb-3" role="tablist">
                 <li class="nav-item">
-                    <button type="button" class="nav-link active" role="tab" data-bs-toggle="tab" data-bs-target="#tab-general">
+                    <button type="button" class="nav-link active d-flex align-items-center justify-content-center" role="tab" data-bs-toggle="tab" data-bs-target="#tab-general">
                         <i class="tf-icons bx bx-home me-1"></i> Genel Bilgiler
+                        @if($errors->hasAny(['title', 'property_type_id', 'price_per_night', 'status', 'capacity', 'address', 'city', 'country', 'description']))
+                            <span class="badge rounded-pill bg-danger ms-2" title="Bu sekmede hata var">!</span>
+                        @endif
                     </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-images">
+                    <button type="button" class="nav-link d-flex align-items-center justify-content-center" role="tab" data-bs-toggle="tab" data-bs-target="#tab-images">
                         <i class="tf-icons bx bx-image-add me-1"></i> Resimler
+                        @if($errors->has('images') || $errors->has('images.*'))
+                            <span class="badge rounded-pill bg-danger ms-2" title="Bu sekmede hata var">!</span>
+                        @endif
                     </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-amenities">
+                    <button type="button" class="nav-link d-flex align-items-center justify-content-center" role="tab" data-bs-toggle="tab" data-bs-target="#tab-amenities">
                         <i class="tf-icons bx bx-list-check me-1"></i> Olanaklar
+                        @if($errors->has('amenities'))
+                            <span class="badge rounded-pill bg-danger ms-2" title="Bu sekmede hata var">!</span>
+                        @endif
                     </button>
                 </li>
                 <li class="nav-item">
-                    <button type="button" class="nav-link" role="tab" data-bs-toggle="tab" data-bs-target="#tab-policies">
+                    <button type="button" class="nav-link d-flex align-items-center justify-content-center" role="tab" data-bs-toggle="tab" data-bs-target="#tab-policies">
                         <i class="tf-icons bx bx-shield-quarter me-1"></i> Politikalar
+                        @if($errors->has('policies'))
+                            <span class="badge rounded-pill bg-danger ms-2" title="Bu sekmede hata var">!</span>
+                        @endif
                     </button>
                 </li>
             </ul>
@@ -59,16 +147,16 @@
                     {{-- Satır 1: Başlık + Mülk Tipi --}}
                     <div class="row g-3 mb-3">
                         <div class="col-md-8">
-                            <label class="form-label" for="title">Başlık</label>
-                            <input type="text" id="title" name="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" placeholder="Bodrum Deniz Manzaralı Villa" />
+                            <label class="form-label required" for="title">Başlık <span class="text-danger">*</span></label>
+                            <input type="text" id="title" name="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" placeholder="Bodrum Deniz Manzaralı Villa" required />
                             @error('title')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label" for="property_type_id">Mülk Tipi</label>
-                            <select id="property_type_id" name="property_type_id" class="form-select @error('property_type_id') is-invalid @enderror">
+                            <label class="form-label" for="property_type_id">Mülk Tipi <span class="text-danger">*</span></label>
+                            <select id="property_type_id" name="property_type_id" class="form-select @error('property_type_id') is-invalid @enderror" required>
                                 <option value="">Seçiniz</option>
                                 @foreach ($propertyTypes as $type)
                                     <option value="{{ $type->id }}" 
@@ -88,10 +176,10 @@
                     {{-- Satır 2: Fiyat + Durum --}}
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label" for="price_per_night">Gecelik Fiyat</label>
+                            <label class="form-label" for="price_per_night">Gecelik Fiyat <span class="text-danger">*</span></label>
                             <div class="input-group @error('price_per_night') is-invalid @enderror">
                                 <span class="input-group-text">₺</span>
-                                <input type="number" step="0.01" id="price_per_night" name="price_per_night" class="form-control @error('price_per_night') is-invalid @enderror" value="{{ old('price_per_night') }}" placeholder="1500" />
+                                <input type="number" step="0.01" id="price_per_night" name="price_per_night" class="form-control @error('price_per_night') is-invalid @enderror" value="{{ old('price_per_night') }}" placeholder="1500" required />
                             </div>
                             @error('price_per_night')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -101,7 +189,7 @@
                         <div class="col-md-6">
                             <label class="form-label" for="status">Durum</label>
                             <select id="status" name="status" class="form-select @error('status') is-invalid @enderror">
-                                <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Taslak</option>
+                                <option value="draft" {{ old('status', 'draft') == 'draft' ? 'selected' : '' }}>Taslak</option>
                                 <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Yayında</option>
                                 <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Pasif</option>
                             </select>
@@ -111,11 +199,11 @@
                         </div>
                     </div>
 
-                    {{-- Satır 3: Kapasite + Yatak Odası + Banyo (DÜZELTME: id="single-unit-fields" EKLENDİ) --}}
+                    {{-- Satır 3: Kapasite + Yatak Odası + Banyo --}}
                     <div class="row g-3 mb-3" id="single-unit-fields">
                         <div class="col-md-4">
                             <label class="form-label" for="capacity">Kapasite (Kişi)</label>
-                            <input type="number" id="capacity" name="capacity" class="form-control @error('capacity') is-invalid @enderror" value="{{ old('capacity', 1) }}" placeholder="4" />
+                            <input type="number" id="capacity" name="capacity" class="form-control @error('capacity') is-invalid @enderror" value="{{ old('capacity', 1) }}" placeholder="4" min="1" />
                             @error('capacity')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -123,12 +211,18 @@
 
                         <div class="col-md-4">
                             <label class="form-label" for="bedrooms">Yatak Odası Sayısı</label>
-                            <input type="number" id="bedrooms" name="bedrooms" class="form-control" value="{{ old('bedrooms', 1) }}" placeholder="2" />
+                            <input type="number" id="bedrooms" name="bedrooms" class="form-control @error('bedrooms') is-invalid @enderror" value="{{ old('bedrooms', 1) }}" placeholder="2" min="0" />
+                            @error('bedrooms')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-4">
                             <label class="form-label" for="bathrooms">Banyo Sayısı</label>
-                            <input type="number" id="bathrooms" name="bathrooms" class="form-control" value="{{ old('bathrooms', 1) }}" placeholder="1" />
+                            <input type="number" id="bathrooms" name="bathrooms" class="form-control @error('bathrooms') is-invalid @enderror" value="{{ old('bathrooms', 1) }}" placeholder="1" min="0" />
+                            @error('bathrooms')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
@@ -169,12 +263,23 @@
                     </div>
                 </div>
 
-                <!-- 2. TAB: RESİMLER -->
+                <!-- 2. TAB: RESİMLER (ÖNİZLEME & UPLOAD UI DÜZELTİLDİ) -->
                 <div class="tab-pane fade" id="tab-images" role="tabpanel">
                     <div class="mb-3">
-                        <label class="form-label" for="images">Mülk Görselleri Seçin</label>
-                        <input type="file" id="images" name="images[]" class="form-control @error('images') is-invalid @enderror @error('images.*') is-invalid @enderror" multiple accept="image/*">
-                        <small class="text-muted d-block mt-1">Birden fazla görsel seçebilirsiniz. Desteklenenler: JPG, PNG, WEBP (Max: 2MB)</small>
+                        <label class="form-label fw-bold" for="images">Mülk Görselleri Seçin</label>
+                        
+                        <!-- Özel Drag & Drop Kutusu -->
+                        <div class="image-dropzone mb-3" onclick="document.getElementById('images').click();">
+                            <i class="bx bx-cloud-upload fs-1 text-primary mb-2"></i>
+                            <h5>Görselleri buraya tıklayarak seçin</h5>
+                            <p class="text-muted mb-0">PNG, JPG, WEBP formatları desteklenir (Maks: 2MB / adet)</p>
+                        </div>
+
+                        <input type="file" id="images" name="images[]" class="form-control d-none @error('images') is-invalid @enderror @error('images.*') is-invalid @enderror" multiple accept="image/*">
+                        
+                        <!-- Önizleme Konteynırı -->
+                        <div id="image-preview-container" class="d-flex flex-wrap gap-2 mt-3"></div>
+
                         @error('images')
                             <div class="invalid-feedback d-block">{{ $message }}</div>
                         @enderror
@@ -184,7 +289,7 @@
                     </div>
                 </div>
 
-                <!-- 3. TAB: OLANAKLAR (DÜZELTME: Temiz CSS & Flex Hizalaması) -->
+                <!-- 3. TAB: OLANAKLAR -->
                 <div class="tab-pane fade" id="tab-amenities" role="tabpanel">
                     <p class="text-muted mb-3">Bu mülkte sunulan olanakları işaretleyin:</p>
                     <div class="row g-3">
@@ -193,9 +298,9 @@
                                 <div class="col-md-3 col-sm-6">
                                     <div class="form-check custom-option custom-option-basic p-0">
                                         <label class="form-check-label custom-option-content p-3 border rounded cursor-pointer d-flex align-items-center w-100" for="amenity_{{ $amenity->id }}">
-                                            <input class="form-check-input mt-0 me-2" type="checkbox" style="float: none; margin-left: 0;" name="amenities[]" value="{{ $amenity->id }}" id="amenity_{{ $amenity->id }}" {{ is_array(old('amenities')) && in_array($amenity->id, old('amenities')) ? 'checked' : '' }}>
-                                            <span class="d-flex align-items-center gap-1">
-                                                <i class="bx {{ $amenity->icon ?? 'bx-check-circle' }} fs-5"></i>
+                                            <input class="form-check-input mt-0 me-2" style="margin-left: 0;" type="checkbox" name="amenities[]" value="{{ $amenity->id }}" id="amenity_{{ $amenity->id }}" {{ is_array(old('amenities')) && in_array($amenity->id, old('amenities')) ? 'checked' : '' }}>
+                                            <span class="d-flex align-items-center gap-2">
+                                                <i class="bx {{ $amenity->icon ?? 'bx-check-circle' }} fs-5 text-primary"></i>
                                                 <span class="fw-semibold">{{ $amenity->name }}</span>
                                             </span>
                                         </label>
@@ -210,14 +315,14 @@
                     </div>
                 </div>
 
-                <!-- 4. TAB: POLİTİKALAR (Dinamik Todo List) -->
+                <!-- 4. TAB: POLİTİKALAR -->
                 <div class="tab-pane fade" id="tab-policies" role="tabpanel">
                     <div class="card p-3 mb-4 bg-lighter border">
                         <h6 class="mb-3">Yeni Politika / Kural Ekle</h6>
                         <div class="row g-2">
                             <div class="col-md-3">
                                 <input type="text" id="policy_icon_input" class="form-control" placeholder="İkon (Örn: bx-time)">
-                                <small class="text-muted">Örn: bx-time, bx-no-entry, bx-x-circle</small>
+                                <small class="text-muted">Boxicons kodu (Örn: bx-time, bx-no-entry)</small>
                             </div>
                             <div class="col-md-4">
                                 <input type="text" id="policy_title_input" class="form-control" placeholder="Başlık (Örn: Giriş Saati)">
@@ -235,7 +340,7 @@
 
                     <!-- Eklenen Politikaların Liste Alanı -->
                     <ul class="list-group" id="policy-list">
-                        {{-- JS ile buraya dinamik li ve hidden input'lar basılacak --}}
+                        {{-- JS dinamik olarak ve old() verileri buraya doldurulacaktır --}}
                     </ul>
                 </div>
 
@@ -268,22 +373,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const selectedOption = propertyTypeSelect.options[propertyTypeSelect.selectedIndex];
         
-        // Seçim yapılmamışsa varsayılan alanları göster, uyarınızı gizle
         if (!selectedOption || !selectedOption.value) {
             if (singleUnitFields) singleUnitFields.style.display = 'flex';
             if (hotelInfoAlert) hotelInfoAlert.style.display = 'none';
             return;
         }
 
-        // Option üzerindeki data-has-rooms bilgisini okuyoruz
         const hasRooms = selectedOption.getAttribute('data-has-rooms') === 'true';
 
         if (hasRooms) {
-            // Otel / Dorm seçildi: Mülk detayındaki yatak/banyo alanlarını gizle
             if (singleUnitFields) singleUnitFields.style.display = 'none';
             if (hotelInfoAlert) hotelInfoAlert.style.display = 'block';
         } else {
-            // Villa / Ev / Kabin seçildi: Yatak/Banyo/Kapasite alanlarını göster
             if (singleUnitFields) singleUnitFields.style.display = 'flex';
             if (hotelInfoAlert) hotelInfoAlert.style.display = 'none';
         }
@@ -291,14 +392,79 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if(propertyTypeSelect) {
         propertyTypeSelect.addEventListener('change', toggleFieldBasedOnType);
-        toggleFieldBasedOnType(); // Sayfa yüklendiğinde eski veriye/seçime göre çalıştır
+        toggleFieldBasedOnType();
     }
 
-    // --- 2. Dinamik Politika (Todo List) Ekleme & Silme ---
+    // --- 2. Dinamik Resim Önizleme (Image Preview UI) ---
+    const imageInput = document.getElementById('images');
+    const previewContainer = document.getElementById('image-preview-container');
+
+    if(imageInput && previewContainer) {
+        imageInput.addEventListener('change', function(e) {
+            previewContainer.innerHTML = ''; // Temizle
+            const files = e.target.files;
+
+            if(files) {
+                Array.from(files).forEach((file, index) => {
+                    if (!file.type.startsWith('image/')) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'preview-image-wrapper';
+                        wrapper.innerHTML = `
+                            <img src="${event.target.result}" alt="Preview">
+                        `;
+                        previewContainer.appendChild(wrapper);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+    }
+
+    // --- 3. Dinamik Politika (Todo List) Ekleme & Silme & Old Data Kurtarma ---
     const addPolicyBtn = document.getElementById('add-policy-btn');
     const policyList = document.getElementById('policy-list');
     let policyIndex = 0;
 
+    function renderPolicyItem(icon, title, desc) {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 border rounded shadow-sm';
+        
+        li.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="bx ${icon} fs-3 me-3 text-primary"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold">${title}</h6>
+                    <small class="text-muted">${desc}</small>
+                </div>
+            </div>
+            
+            <input type="hidden" name="policies[${policyIndex}][icon]" value="${icon}">
+            <input type="hidden" name="policies[${policyIndex}][title]" value="${title}">
+            <input type="hidden" name="policies[${policyIndex}][description]" value="${desc}">
+            
+            <button type="button" class="btn btn-sm btn-outline-danger remove-policy-btn">
+                <i class="bx bx-trash"></i>
+            </button>
+        `;
+
+        policyList.appendChild(li);
+        policyIndex++;
+    }
+
+    // Validation Hatası Dönmüşse Eski Politikaları Yeniden Yükle
+    @if(old('policies'))
+        const oldPolicies = @json(old('policies'));
+        Object.values(oldPolicies).forEach(p => {
+            if(p.title) {
+                renderPolicyItem(p.icon || 'bx-info-circle', p.title, p.description || '');
+            }
+        });
+    @endif
+
+    // Butona basarak yeni politika ekleme
     if(addPolicyBtn) {
         addPolicyBtn.addEventListener('click', function () {
             const iconInput = document.getElementById('policy_icon_input');
@@ -314,40 +480,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 border rounded shadow-sm';
-            
-            li.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <i class="bx ${iconVal} fs-3 me-3 text-primary"></i>
-                    <div>
-                        <h6 class="mb-0 fw-bold">${titleVal}</h6>
-                        <small class="text-muted">${descVal}</small>
-                    </div>
-                </div>
-                
-                <!-- Controller'a Gidecek Gizli Inputlar -->
-                <input type="hidden" name="policies[${policyIndex}][icon]" value="${iconVal}">
-                <input type="hidden" name="policies[${policyIndex}][title]" value="${titleVal}">
-                <input type="hidden" name="policies[${policyIndex}][description]" value="${descVal}">
-                
-                <button type="button" class="btn btn-sm btn-outline-danger remove-policy-btn">
-                    <i class="bx bx-trash"></i>
-                </button>
-            `;
-
-            policyList.appendChild(li);
+            renderPolicyItem(iconVal, titleVal, descVal);
 
             // Inputları temizle
             iconInput.value = '';
             titleInput.value = '';
             descInput.value = '';
-
-            policyIndex++;
         });
     }
 
-    // Liste elemanını kaldırma
+    // Liste elemanını silme
     if(policyList) {
         policyList.addEventListener('click', function (e) {
             if (e.target.closest('.remove-policy-btn')) {

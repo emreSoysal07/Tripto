@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Amenity;
 use App\Models\PropertyType;
+use App\Models\PropertyImage;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
 
 class PropertyController extends Controller
 {
@@ -94,28 +98,93 @@ class PropertyController extends Controller
     public function edit(Property $property)
     {
         $propertyTypes = PropertyType::all();
-
-        return view('admin.properties.edit', compact('property', 'propertyTypes'));
+        $amenities = Amenity::all();
+    
+        // İlişkileri view'a göndermeden önce yüklüyoruz
+        $property->load(['policies', 'amenities', 'images']);
+    
+        return view('admin.properties.edit', compact('property', 'propertyTypes', 'amenities'));
     }
-
+    
     public function update(Request $request, Property $property)
     {
+        // 1. ÖNCE Doğrulama Yapılır
         $validated = $request->validate([
             'property_type_id' => 'required|exists:property_types,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price_per_night' => 'required|numeric|min:0',
-            'capacity' => 'required|integer|min:1',
-            'bedrooms' => 'nullable|integer|min:0',
-            'bathrooms' => 'nullable|integer|min:0',
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
-            'country' => 'required|string|max:100',
-            'status' => 'required|in:draft,published,inactive',
+            'title'            => 'required|string|max:255',
+            'description'      => 'required|string',
+            'price_per_night'  => 'required|numeric|min:0',
+            'capacity'         => 'required|integer|min:1',
+            'bedrooms'         => 'nullable|integer|min:0',
+            'bathrooms'        => 'nullable|integer|min:0',
+            'address'          => 'required|string|max:255',
+            'city'             => 'required|string|max:100',
+            'country'          => 'required|string|max:100',
+            'status'           => 'required|in:draft,published,inactive',
+            'amenities'        => 'nullable|array',
+            'policies'         => 'nullable|array',
+            // Resim işlemleri için eklenen validationlar:
+            'delete_images'    => 'nullable|array',
+            'delete_images.*'  => 'integer|exists:property_images,id',
+            'images'           => 'nullable|array',
+            'images.*'         => 'image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
+    
+        // 2. İşlemleri Transaction İçinde Güvenle Çalıştırıyoruz
+        DB::transaction(function () use ($request, $property, $validated) {
+            
+            // Ana Mülk Bilgilerini Güncelle
+            $property->update($validated);
+    
+            // Olanakları Güncelle (Pivot Tablo)
+            $property->amenities()->sync($request->input('amenities', []));
+    
+            // Politikaları Güncelle (Eskileri sil, yenileri ekle)
+            $property->policies()->delete();
+    
+            if ($request->has('policies')) {
+                foreach ($request->policies as $policy) {
+                    if (!empty($policy['title'])) {
+                        $property->policies()->create([
+                            'icon'        => $policy['icon'] ?? 'bx-info-circle',
+                            'title'       => $policy['title'],
+                            'description' => $policy['description'] ?? null,
+                        ]);
+                    }
+                }
+            }
 
-        $property->update($validated);
+            // --- 3. SEÇİLEN RESİMLERİ SİLME İŞLEMİ ---
+            if ($request->filled('delete_images')) {
+                // Sadece bu mülke ait olan resimleri güvenlik amacıyla filtresiyle çekiyoruz
+                $imagesToDelete = $property->images()->whereIn('id', $request->delete_images)->get();
 
+                foreach ($imagesToDelete as $image) {
+                    // Disk üzerindeki fiziksel dosyayı sil
+                    if ($image->image_path && Storage::disk('public')->exists($image->image_path)) {
+                        Storage::disk('public')->delete($image->image_path);
+                    }
+                    // Veritabanı kaydını sil
+                    $image->delete();
+                }
+            }
+
+            // --- 4. YENİ RESİM YÜKLEME İŞLEMİ ---
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $file) {
+                    // 'public/properties' klasörüne kaydet
+                    $path = $file->store('properties', 'public');
+
+                    // Veritabanına ilişkili olarak ekle
+                    $property->images()->create([
+                        'image_path' => $path,
+                    ]);
+                }
+            }
+        });
+
+        
+    
         return redirect()
             ->route('admin.properties.index')
             ->with('success', 'Mülk başarıyla güncellendi.');
