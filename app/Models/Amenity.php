@@ -10,6 +10,7 @@ class Amenity extends Model
     protected $fillable = [
         'name',
         'icon',
+        'is_active',
     ];
 
     public function properties(): BelongsToMany

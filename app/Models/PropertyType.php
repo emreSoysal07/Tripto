@@ -12,6 +12,7 @@ class PropertyType extends Model
         'slug',
         'icon',
         'has_rooms',
+        'is_active',
     ];
 
     public function properties(): HasMany

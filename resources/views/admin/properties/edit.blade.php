@@ -55,7 +55,7 @@
 <div class="flex-grow-1">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <a href="{{ route('admin.properties.index') }}" class="btn btn-outline-secondary btn-sm">
+        <a href="{{ route('admin.properties.index') }}" class="btn btn-outline-secondary btn-md">
             <i class="bx bx-arrow-back me-1"></i> Listeye Dön
         </a>
     </div>
