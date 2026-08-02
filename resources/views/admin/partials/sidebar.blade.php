@@ -85,6 +85,14 @@
       </a>
     </li>
 
+    <!-- Kullanıcı Yönetimi -->
+    <li class="menu-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+      <a href="{{ route('admin.users.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-user"></i>
+        <div data-i18n="Users">Kullanıcılar</div>
+      </a>
+    </li>
+
     <!-- SYSTEM / SİSTEM AYARLARI (İhtiyaç halinda açılabilir) -->
     {{-- 
     <li class="menu-header small text-uppercase">
